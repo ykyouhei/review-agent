@@ -4,7 +4,7 @@ CI非依存・エージェンティックなPRコードレビューCLI。CodeRab
 
 - **リポジトリ全体の文脈でレビュー** — diffだけでなく、エージェントがRead/Grep/Globで既存実装・呼び出し元・慣習を自分で探索してから判断します
 - **ナレッジ蓄積** — レビュー観点やリポジトリ理解を[OKF (Open Knowledge Format)](https://github.com/GoogleCloudPlatform/knowledge-catalog/tree/main/okf)のMarkdownとしてリポジトリ内に蓄積し、レビュー時に参照します
-- **プラガブル** — エージェントSDK (Claude Agent SDK / Copilot SDK) とVCS (CodeCommit / GitHub / GitLab) を設定で切替（MVPはclaude + codecommit）
+- **プラガブル** — エージェントSDK (Claude Agent SDK / Copilot SDK、いずれも実装済み) とVCS (CodeCommit実装済み / GitHub / GitLab) を設定で切替
 - **どのCIでも動く** — CodeBuild / Codemagic / GitHub Actions などで `review-agent review` を1行足すだけ
 
 設計の背景と詳細は [docs/DESIGN.md](docs/DESIGN.md) を参照。
@@ -13,7 +13,12 @@ CI非依存・エージェンティックなPRコードレビューCLI。CodeRab
 
 ```bash
 npm install && npm run build
-export ANTHROPIC_API_KEY=sk-ant-...   # CIのシークレット機構で注入する
+
+# agent: claude の場合
+export ANTHROPIC_API_KEY=sk-ant-...        # CIのシークレット機構で注入する
+
+# agent: copilot の場合 (Copilotサブスクリプションのあるアカウント)
+export COPILOT_GITHUB_TOKEN=ghp_...        # GH_TOKEN / GITHUB_TOKEN でも可
 ```
 
 対象リポジトリのルートに `.review-agent.yml` を置きます（すべて省略可、下記はデフォルト値）:
@@ -21,7 +26,7 @@ export ANTHROPIC_API_KEY=sk-ant-...   # CIのシークレット機構で注入�
 ```yaml
 agent: claude            # claude | copilot
 vcs: codecommit          # codecommit | github | gitlab
-model: claude-sonnet-5
+model: claude-sonnet-5   # agent: copilot の場合はCopilot側のモデルID (例: gpt-5, claude-sonnet-4.5)
 language: ja             # レビューコメントの言語
 review:
   maxComments: 10        # 1回のレビューで投稿するコメント数の上限

@@ -19,7 +19,16 @@ Principles:
 - Few strong findings beat many weak ones. It is fine to return zero findings.
 - Line numbers refer to the post-change file content.`;
 
-export function buildReviewPrompt(task: ReviewTask): string {
+export interface ReviewPromptOptions {
+  /**
+   * Ask for the result as a JSON fence in the final message. Used by SDK
+   * backends without native structured-output support (parsed with
+   * parseReviewOutput).
+   */
+  jsonInText?: boolean;
+}
+
+export function buildReviewPrompt(task: ReviewTask, options: ReviewPromptOptions = {}): string {
   const parts: string[] = [];
 
   parts.push(`Review the following pull request. Respond with the structured output (summary + findings). Write the summary, finding titles, and bodies in ${languageName(task.language)}.`);
@@ -41,6 +50,12 @@ export function buildReviewPrompt(task: ReviewTask): string {
   parts.push(
     `# Instructions\n\n1. Read the diff below.\n2. For each non-trivial hunk, explore the repository: read the full changed files, grep for existing similar implementations and for callers of changed functions, and check the conventions used by neighboring code.\n3. Report findings that a strong human reviewer would raise: bugs, security issues, broken callers, duplicated logic where an existing utility should be reused, violations of documented guidelines, missing error handling, misleading names/docs relative to behavior.\n4. Set \`confidence\` honestly (1.0 = verified against the code; below 0.5 = speculation).\n5. Only reference lines that exist in the post-change files, within the changed files listed above.`,
   );
+
+  if (options.jsonInText) {
+    parts.push(
+      `# Output format\n\nEnd your final message with exactly one \`\`\`json fence containing only this object (no prose inside the fence):\n\n\`\`\`json\n{\n  "summary": "overall review summary",\n  "findings": [\n    {\n      "file": "repo-relative path",\n      "startLine": 1,\n      "endLine": 1,\n      "severity": "info | minor | major | critical",\n      "category": "bug | security | performance | consistency | ...",\n      "title": "one-line statement of the issue",\n      "body": "reasoning and fix proposal",\n      "suggestion": "replacement code (optional)",\n      "confidence": 0.9\n    }\n  ]\n}\n\`\`\`\n\nLine numbers refer to the post-change file. Use an empty findings array when there is nothing worth reporting.`,
+    );
+  }
 
   parts.push(`# Diff\n\n\`\`\`diff\n${task.diff}\n\`\`\``);
 

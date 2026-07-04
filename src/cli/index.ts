@@ -147,6 +147,6 @@ function indent(text: string, spaces: number): string {
 }
 
 program.parseAsync().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : error);
+  console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;
 });

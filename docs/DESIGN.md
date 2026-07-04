@@ -50,7 +50,7 @@ Claude Agent SDK と Copilot SDK (2026年6月GA) は「プロンプト+ツール
           │ vcs/*         │ │ agent/*        │ │ knowledge/*   │
           │ VcsProvider   │ │ AgentRunner    │ │ OKF store     │
           │ - codecommit  │ │ - claude       │ │ - index生成    │
-          │ - github(P2)  │ │ - copilot(P2)  │ │ - wiki生成     │
+          │ - github(P2)  │ │ - copilot      │ │ - wiki生成     │
           │ - local diff  │ └────────────────┘ └───────────────┘
           └───────────────┘
 ```
@@ -106,8 +106,19 @@ interface VcsProvider {
 
 ### 2.3 Findingsの受け渡し
 
-エージェントには最終出力として `<findings>...</findings>` タグ内のJSON配列を要求し、zodでパースする。パース失敗時は「JSONだけを出力せよ」と1回だけ追撃する。
-(将来: SDKのカスタムツール(`report_finding`)化で構造をさらに堅くできる。MVPではシンプルさ優先。)
+- **claude**: Claude Agent SDKの `outputFormat: { type: 'json_schema' }` によるネイティブ構造化出力を使用。失敗時は最終メッセージのテキストパース (`parseReviewOutput`) にフォールバック。
+- **copilot**: Copilot SDKにjson_schema出力モードがないため、プロンプトで「最終メッセージに ```json フェンスで `{ summary, findings }` のみ出力せよ」と指示し、共通の `parseReviewOutput` でパースする。
+
+### 2.4 Copilotバックエンドの対応関係
+
+| 関心事 | Claude Agent SDK | Copilot SDK (`@github/copilot-sdk`) |
+|---|---|---|
+| セッション | `query({ prompt, options })` | `CopilotClient` → `createSession` → `sendAndWait` |
+| リポジトリ探索 | `cwd` + Read/Grep/Glob | `workingDirectory` + 組込ツール |
+| read-only制約 | `tools: ['Read','Grep','Glob']` | `onPermissionRequest` でdeny-by-default (readのみapprove) |
+| wiki生成時の書込制限 | `canUseTool` でナレッジ配下のみ許可 | `onPermissionRequest` で `kind: 'write'` の `fileName` を検査 |
+| システムプロンプト | `systemPrompt` | `systemMessage: { mode: 'append' }` (SDKのガードレール維持) |
+| 認証 | `ANTHROPIC_API_KEY` / Claude Codeログイン | `COPILOT_GITHUB_TOKEN` 等 + Copilotサブスクリプション |
 
 ## 3. ナレッジ設計 (OKF)
 
@@ -139,8 +150,8 @@ timestamp: 2026-07-04T00:00:00Z
 
 | Phase | 内容 |
 |---|---|
-| **MVP (今回)** | CLI / Claude Agent SDKランナー / CodeCommitプロバイダ / ローカルモード / ノイズ制御パイプライン / OKFナレッジ(init・wiki生成) |
-| **Phase 2** | `learn` コマンド(ボットコメントへの👍👎・返信を収集し review-notes/ へ抑制ルールを蓄積)、GitHub / GitLab プロバイダ、Copilot SDKランナー |
+| **MVP (実装済み)** | CLI / Claude Agent SDKランナー / Copilot SDKランナー / CodeCommitプロバイダ / ローカルモード / ノイズ制御パイプライン / OKFナレッジ(init・wiki生成) |
+| **Phase 2** | `learn` コマンド(ボットコメントへの👍👎・返信を収集し review-notes/ へ抑制ルールを蓄積)、GitHub / GitLab プロバイダ |
 | **Phase 3** | インクリメンタルレビュー(前回レビュー済みコミット以降のみ)、複数リポジトリでのナレッジ共有(別リポジトリストア)、レビュー品質メトリクス(指摘の採用率) |
 
 ## 5. セキュリティ・運用上の注意

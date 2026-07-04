@@ -11,6 +11,6 @@ export function createAgentRunner(
     case 'claude':
       return new ClaudeAgentRunner({ model: config.model, onProgress });
     case 'copilot':
-      return new CopilotAgentRunner();
+      return new CopilotAgentRunner({ model: config.model, onProgress });
   }
 }
