@@ -64,9 +64,16 @@ export class ClaudeAgentRunner implements AgentRunner {
   ): Promise<{ text: string; structuredOutput: unknown }> {
     const stream = query({ prompt, options });
     let lastText = '';
+    let lastAssistantError: string | undefined;
 
     for await (const message of stream as AsyncIterable<SDKMessage>) {
       if (message.type === 'assistant') {
+        lastAssistantError = message.error;
+        if (message.error === 'authentication_failed' || message.error === 'billing_error') {
+          throw new Error(
+            `Agent run failed: ${message.error}. Set ANTHROPIC_API_KEY (or log in to Claude Code).`,
+          );
+        }
         for (const block of message.message.content) {
           if (block.type === 'text' && block.text.trim()) {
             lastText = block.text;
@@ -76,8 +83,16 @@ export class ClaudeAgentRunner implements AgentRunner {
         }
       } else if (message.type === 'result') {
         if (message.subtype !== 'success') {
-          const detail = 'errors' in message ? message.errors.join('; ') : '';
+          const detail = [
+            ...('errors' in message ? message.errors : []),
+            ...(lastAssistantError ? [`last assistant error: ${lastAssistantError}`] : []),
+          ].join('; ');
           throw new Error(`Agent run failed (${message.subtype}) ${detail}`.trim());
+        }
+        // Auth and API failures surface as subtype "success" with is_error set
+        // and the error text in `result` (e.g. "Invalid API key").
+        if (message.is_error) {
+          throw new Error(`Agent run failed: ${message.result || 'unknown error'}`);
         }
         return {
           text: message.result || lastText,

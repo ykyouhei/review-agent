@@ -8,6 +8,7 @@ function git(repoPath: string, args: string[]): string {
     cwd: repoPath,
     encoding: 'utf8',
     maxBuffer: 64 * 1024 * 1024,
+    stdio: ['ignore', 'pipe', 'pipe'],
   });
 }
 
