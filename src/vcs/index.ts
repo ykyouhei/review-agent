@@ -23,8 +23,15 @@ export function createVcsProvider(config: Config, options: CreateProviderOptions
         repoPath: options.repoPath,
       });
     }
-    case 'github':
-      return new GitHubProvider();
+    case 'github': {
+      const repository = options.repository ?? config.github.repository;
+      if (!repository) {
+        throw new Error(
+          'GitHub repository ("owner/repo") is required (--repo, github.repository in .review-agent.yml, or CI auto-detection)',
+        );
+      }
+      return new GitHubProvider({ repository, baseUrl: config.github.baseUrl });
+    }
     case 'gitlab':
       throw new Error('The gitlab provider is not implemented yet. Use `vcs: codecommit`.');
   }

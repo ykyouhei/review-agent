@@ -50,7 +50,7 @@ Claude Agent SDK と Copilot SDK (2026年6月GA) は「プロンプト+ツール
           │ vcs/*         │ │ agent/*        │ │ knowledge/*   │
           │ VcsProvider   │ │ AgentRunner    │ │ OKF store     │
           │ - codecommit  │ │ - claude       │ │ - index生成    │
-          │ - github(P2)  │ │ - copilot      │ │ - wiki生成     │
+          │ - github      │ │ - copilot      │ │ - wiki生成     │
           │ - local diff  │ └────────────────┘ └───────────────┘
           └───────────────┘
 ```
@@ -150,8 +150,8 @@ timestamp: 2026-07-04T00:00:00Z
 
 | Phase | 内容 |
 |---|---|
-| **MVP (実装済み)** | CLI / Claude Agent SDKランナー / Copilot SDKランナー / CodeCommitプロバイダ / ローカルモード / ノイズ制御パイプライン / OKFナレッジ(init・wiki生成) |
-| **Phase 2** | `learn` コマンド(ボットコメントへの👍👎・返信を収集し review-notes/ へ抑制ルールを蓄積)、GitHub / GitLab プロバイダ |
+| **MVP (実装済み)** | CLI / Claude Agent SDKランナー / Copilot SDKランナー / CodeCommit・GitHubプロバイダ / ローカルモード / ノイズ制御パイプライン / OKFナレッジ(init・wiki生成) |
+| **Phase 2** | `learn` コマンド(ボットコメントへの👍👎・返信を収集し review-notes/ へ抑制ルールを蓄積)、GitLabプロバイダ |
 | **Phase 3** | インクリメンタルレビュー(前回レビュー済みコミット以降のみ)、複数リポジトリでのナレッジ共有(別リポジトリストア)、レビュー品質メトリクス(指摘の採用率) |
 
 ## 5. セキュリティ・運用上の注意

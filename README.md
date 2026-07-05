@@ -4,7 +4,7 @@ CI非依存・エージェンティックなPRコードレビューCLI。CodeRab
 
 - **リポジトリ全体の文脈でレビュー** — diffだけでなく、エージェントがRead/Grep/Globで既存実装・呼び出し元・慣習を自分で探索してから判断します
 - **ナレッジ蓄積** — レビュー観点やリポジトリ理解を[OKF (Open Knowledge Format)](https://github.com/GoogleCloudPlatform/knowledge-catalog/tree/main/okf)のMarkdownとしてリポジトリ内に蓄積し、レビュー時に参照します
-- **プラガブル** — エージェントSDK (Claude Agent SDK / Copilot SDK、いずれも実装済み) とVCS (CodeCommit実装済み / GitHub / GitLab) を設定で切替
+- **プラガブル** — エージェントSDK (Claude Agent SDK / Copilot SDK) とVCS (CodeCommit / GitHub) を設定で切替。GitLabはPhase 2
 - **どのCIでも動く** — CodeBuild / Codemagic / GitHub Actions などで `review-agent review` を1行足すだけ
 
 設計の背景と詳細は [docs/DESIGN.md](docs/DESIGN.md) を参照。
@@ -39,6 +39,9 @@ knowledge:
 codecommit:
   # repositoryName: my-app   # CIから自動検出できない場合に指定
   # region: ap-northeast-1
+github:
+  # repository: owner/repo   # CIから自動検出できない場合に指定
+  # baseUrl: https://ghe.example.com/api/v3   # GitHub Enterprise Server
 ```
 
 ## 使い方
@@ -102,6 +105,32 @@ scripts:
   - name: PR review
     script: npx review-agent review --pr $CM_PULL_REQUEST_NUMBER
 ```
+
+### GitHub Actions (vcs: github)
+
+```yaml
+name: PR review
+on:
+  pull_request:
+    types: [opened, synchronize]
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci
+      - run: npx review-agent review
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+```
+
+PR番号・リポジトリはActionsの環境変数から自動検出されます。diffと変更ファイル一覧はGitHub APIから取得するため、shallow checkoutのままで動作します（エージェントのリポジトリ探索用にcheckoutは必要です）。
 
 ## ナレッジ運用
 

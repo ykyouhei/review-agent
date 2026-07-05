@@ -34,6 +34,14 @@ export const configSchema = z.object({
       region: z.string().optional(),
     })
     .default({}),
+  github: z
+    .object({
+      /** "owner/repo"; usually auto-detected from CI env. */
+      repository: z.string().optional(),
+      /** GitHub Enterprise Server API root, e.g. https://ghe.example.com/api/v3 */
+      baseUrl: z.string().optional(),
+    })
+    .default({}),
 });
 
 export type Config = z.infer<typeof configSchema>;
