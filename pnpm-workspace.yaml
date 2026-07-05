@@ -1,0 +1,3 @@
+# esbuild downloads its platform binary in a postinstall script (needed by tsx/vitest)
+allowBuilds:
+  esbuild: true
