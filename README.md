@@ -11,8 +11,11 @@ CI非依存・エージェンティックなPRコードレビューCLI。CodeRab
 
 ## セットアップ
 
+Nodeは `.node-version` / `mise.toml` で、パッケージマネージャーは `package.json` の `packageManager` フィールドでpnpmに固定しています。
+
 ```bash
-npm install && npm run build
+mise install                 # Node 24 + pnpm を導入 (fnm等 .node-version 対応ツールでも可)
+pnpm install && pnpm build
 
 # agent: claude の場合
 export ANTHROPIC_API_KEY=sk-ant-...        # CIのシークレット機構で注入する
@@ -73,8 +76,11 @@ buildspec.yml:
 version: 0.2
 phases:
   install:
+    runtime-versions:
+      nodejs: 24
     commands:
-      - npm ci
+      - corepack enable && corepack prepare --activate   # packageManagerフィールドのpnpmを有効化
+      - pnpm install --frozen-lockfile
   build:
     commands:
       # PRイベントで起動するよう CodeCommit → EventBridge → CodeBuild を設定し、
@@ -121,9 +127,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4          # package.json の packageManager を読む
       - uses: actions/setup-node@v4
-        with: { node-version: 22 }
-      - run: npm ci
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
       - run: npx review-agent review
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -147,6 +156,6 @@ PR番号・リポジトリはActionsの環境変数から自動検出されま�
 ## 開発
 
 ```bash
-npm run typecheck && npm test    # 型チェック + ユニットテスト
-npm run dev -- review --local --dry-run   # 手元で実行
+pnpm typecheck && pnpm test    # 型チェック + ユニットテスト
+pnpm dev review --local --dry-run   # 手元で実行
 ```

@@ -1,0 +1,4 @@
+[tools]
+node = "24"
+# pnpm 11 ships no darwin-x64 standalone binary, so install through npm instead of aqua
+"npm:pnpm" = "11"
